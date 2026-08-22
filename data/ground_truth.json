@@ -1,0 +1,119 @@
+{
+    "dataset": "ecommerce_metrics.csv",
+    "previous_period": {
+      "start_date": "2026-08-05",
+      "end_date": "2026-08-11"
+    },
+    "current_period": {
+      "start_date": "2026-08-12",
+      "end_date": "2026-08-18"
+    },
+    "scenarios": [
+      {
+        "id": "beauty_livestream_decline",
+        "question": "Why did Beauty GMV decline in the current period?",
+        "filters": {
+          "category": "Beauty"
+        },
+        "expected_findings": [
+          {
+            "dimension": "channel",
+            "value": "Livestream",
+            "metric": "impressions",
+            "direction": "decrease"
+          },
+          {
+            "dimension": "channel",
+            "value": "Livestream",
+            "metric": "ctr",
+            "direction": "decrease"
+          }
+        ],
+        "required_metrics": [
+          "gmv",
+          "impressions",
+          "ctr"
+        ]
+      },
+      {
+        "id": "electronics_aov_growth",
+        "question": "What drove the Electronics performance change in the current period?",
+        "filters": {
+          "category": "Electronics"
+        },
+        "expected_findings": [
+          {
+            "dimension": "category",
+            "value": "Electronics",
+            "metric": "aov",
+            "direction": "increase",
+            "minimum_relative_change": 0.15
+          }
+        ],
+        "required_metrics": [
+          "gmv",
+          "paid_orders",
+          "aov"
+        ]
+      },
+      {
+        "id": "home_refund_rate_growth",
+        "question": "Did Home experience increased refund pressure in the current period?",
+        "filters": {
+          "category": "Home"
+        },
+        "expected_findings": [
+          {
+            "dimension": "category",
+            "value": "Home",
+            "metric": "refund_rate",
+            "direction": "increase",
+            "minimum_relative_change": 0.80
+          }
+        ],
+        "required_metrics": [
+          "gmv",
+          "refund_amount",
+          "refund_rate"
+        ]
+      },
+      {
+        "id": "short_video_cvr_decline",
+        "question": "How did Short Video conversion change in the current period?",
+        "filters": {
+          "channel": "Short Video"
+        },
+        "expected_findings": [
+          {
+            "dimension": "channel",
+            "value": "Short Video",
+            "metric": "cvr",
+            "direction": "decrease",
+            "minimum_relative_change": 0.20
+          }
+        ],
+        "required_metrics": [
+          "clicks",
+          "paid_orders",
+          "cvr"
+        ]
+      },
+      {
+        "id": "new_user_traffic_share_growth",
+        "question": "How did the user traffic mix change in the current period?",
+        "filters": {},
+        "expected_findings": [
+          {
+            "dimension": "user_segment",
+            "value": "New",
+            "metric": "impression_share",
+            "direction": "increase"
+          }
+        ],
+        "required_metrics": [
+          "impressions",
+          "impression_share"
+        ]
+      }
+    ]
+  }
