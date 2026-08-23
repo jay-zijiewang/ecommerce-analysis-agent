@@ -2,11 +2,11 @@ import pytest
 
 from src.tools import (
     breakdown_by_dimension,
+    compare_dimension_periods,
     compare_periods,
     get_funnel_metrics,
     get_overview_metrics,
 )
-
 
 CURRENT_START = "2026-08-12"
 CURRENT_END = "2026-08-18"
@@ -91,3 +91,33 @@ def test_empty_date_range_returns_no_data() -> None:
     )
 
     assert result["status"] == "no_data"
+
+def test_dimension_period_comparison() -> None:
+    result = compare_dimension_periods(
+        current_start_date=CURRENT_START,
+        current_end_date=CURRENT_END,
+        previous_start_date=PREVIOUS_START,
+        previous_end_date=PREVIOUS_END,
+        dimension="channel",
+        category="Beauty",
+    )
+
+    comparison_by_channel = {
+        item["value"]: item["changes"]
+        for item in result["comparisons"]
+    }
+
+    assert result["status"] == "success"
+    assert set(comparison_by_channel) == {
+        "Livestream",
+        "Search",
+        "Short Video",
+    }
+    assert (
+        comparison_by_channel["Livestream"]["gmv"]["relative_change"]
+        < -0.40
+    )
+    assert (
+        comparison_by_channel["Search"]["gmv"]["relative_change"]
+        > 0
+    )

@@ -332,3 +332,115 @@ def get_funnel_metrics(
             "cvr": metrics["cvr"],
         },
     }
+
+def compare_dimension_periods(
+    current_start_date: str,
+    current_end_date: str,
+    previous_start_date: str,
+    previous_end_date: str,
+    dimension: str,
+    category: str | None = None,
+    channel: str | None = None,
+    user_segment: str | None = None,
+) -> dict[str, Any]:
+    """Compare all values of one dimension between two periods."""
+
+    if dimension not in VALID_DIMENSIONS:
+        raise ValueError(
+            f"Invalid dimension: {dimension}. "
+            f"Valid dimensions: {sorted(VALID_DIMENSIONS)}"
+        )
+
+    current_result = breakdown_by_dimension(
+        start_date=current_start_date,
+        end_date=current_end_date,
+        dimension=dimension,
+        category=category,
+        channel=channel,
+        user_segment=user_segment,
+    )
+
+    previous_result = breakdown_by_dimension(
+        start_date=previous_start_date,
+        end_date=previous_end_date,
+        dimension=dimension,
+        category=category,
+        channel=channel,
+        user_segment=user_segment,
+    )
+
+    if (
+        current_result["status"] != "success"
+        or previous_result["status"] != "success"
+    ):
+        return {
+            "status": "no_data",
+            "message": "Both periods must contain matching data.",
+            "current_period": current_result,
+            "previous_period": previous_result,
+        }
+
+    current_by_value = {
+        item["value"]: item["metrics"]
+        for item in current_result["breakdown"]
+    }
+
+    previous_by_value = {
+        item["value"]: item["metrics"]
+        for item in previous_result["breakdown"]
+    }
+
+    dimension_values = sorted(
+        set(current_by_value) | set(previous_by_value)
+    )
+    comparisons = []
+
+    for dimension_value in dimension_values:
+        current_metrics = current_by_value.get(
+            dimension_value,
+            {},
+        )
+        previous_metrics = previous_by_value.get(
+            dimension_value,
+            {},
+        )
+
+        metric_names = sorted(
+            set(current_metrics) | set(previous_metrics)
+        )
+        metric_changes = {}
+
+        for metric_name in metric_names:
+            current_value = current_metrics.get(
+                metric_name,
+                0,
+            )
+            previous_value = previous_metrics.get(
+                metric_name,
+                0,
+            )
+
+            metric_changes[metric_name] = {
+                "current": current_value,
+                "previous": previous_value,
+                **calculate_change(
+                    current_value,
+                    previous_value,
+                ),
+            }
+
+        comparisons.append(
+            {
+                "value": dimension_value,
+                "changes": metric_changes,
+            }
+        )
+
+    return {
+        "status": "success",
+        "dimension": dimension,
+        "filters": current_result["filters"],
+        "current_period": current_result["date_range"],
+        "previous_period": previous_result["date_range"],
+        "comparisons": comparisons,
+    }

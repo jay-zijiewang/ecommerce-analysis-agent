@@ -8,11 +8,11 @@ from openai import OpenAI
 from src.prompts import SYSTEM_PROMPT
 from src.tools import (
     breakdown_by_dimension,
+    compare_dimension_periods,
     compare_periods,
     get_funnel_metrics,
     get_overview_metrics,
 )
-
 
 load_dotenv()
 
@@ -76,10 +76,26 @@ COMPARISON_PROPERTIES = {
         "description": "Inclusive end date of the previous period.",
     },
     "category": DATE_FILTER_PROPERTIES["category"],
-    "channel": DATE_FILTER_PROPERTIES["channel"],
-    "user_segment": DATE_FILTER_PROPERTIES["user_segment"],
 }
 
+
+DIMENSION_COMPARISON_PROPERTIES = {
+    **COMPARISON_PROPERTIES,
+    "channel": DATE_FILTER_PROPERTIES["channel"],
+    "user_segment": DATE_FILTER_PROPERTIES["user_segment"],
+    "dimension": {
+        "type": "string",
+        "enum": [
+            "category",
+            "channel",
+            "user_segment",
+        ],
+        "description": (
+            "Dimension whose values should be compared "
+            "between the two periods."
+        ),
+    },
+}
 
 TOOL_DEFINITIONS: list[dict[str, Any]] = [
     {
@@ -118,6 +134,29 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
                     "current_end_date",
                     "previous_start_date",
                     "previous_end_date",
+                ],
+                "additionalProperties": False,
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "compare_dimension_periods",
+            "description": (
+                "Compare every value of one business dimension "
+                "between a current period and a previous period. "
+                "Use this instead of repeated filtered calls."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": DIMENSION_COMPARISON_PROPERTIES,
+                "required": [
+                    "current_start_date",
+                    "current_end_date",
+                    "previous_start_date",
+                    "previous_end_date",
+                    "dimension",
                 ],
                 "additionalProperties": False,
             },
@@ -179,6 +218,7 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
 TOOL_FUNCTIONS = {
     "get_overview_metrics": get_overview_metrics,
     "compare_periods": compare_periods,
+    "compare_dimension_periods": compare_dimension_periods,
     "breakdown_by_dimension": breakdown_by_dimension,
     "get_funnel_metrics": get_funnel_metrics,
 }
