@@ -1,0 +1,162 @@
+[
+    {
+      "id": "beauty_gmv_diagnosis",
+      "question": "Why did Beauty GMV decline in the current period?",
+      "expected_tool_counts": {
+        "compare_periods": 1,
+        "compare_dimension_periods": 2
+      },
+      "forbidden_tools": [
+        "get_funnel_metrics",
+        "breakdown_by_dimension"
+      ],
+      "required_terms": [
+        "Livestream",
+        "Returning"
+      ],
+      "tags": [
+        "multi_step",
+        "diagnosis"
+      ]
+    },
+    {
+      "id": "electronics_aov_comparison",
+      "question": "Did Electronics AOV increase in the current period?",
+      "expected_tool_counts": {
+        "compare_periods": 1
+      },
+      "forbidden_tools": [
+        "get_funnel_metrics",
+        "breakdown_by_dimension"
+      ],
+      "required_terms": [
+        "AOV"
+      ],
+      "tags": [
+        "period_comparison"
+      ]
+    },
+    {
+      "id": "home_refund_comparison",
+      "question": "How did the Home refund rate change in the current period?",
+      "expected_tool_counts": {
+        "compare_periods": 1
+      },
+      "forbidden_tools": [
+        "get_funnel_metrics",
+        "breakdown_by_dimension"
+      ],
+      "required_terms": [
+        "refund"
+      ],
+      "tags": [
+        "period_comparison"
+      ]
+    },
+    {
+      "id": "short_video_cvr_comparison",
+      "question": "How did Short Video CVR change between the two periods?",
+      "expected_tool_counts": {
+        "compare_dimension_periods": 1
+      },
+      "forbidden_tools": [
+        "get_funnel_metrics"
+      ],
+      "required_terms": [
+        "Short Video",
+        "CVR"
+      ],
+      "tags": [
+        "channel_comparison"
+      ]
+    },
+    {
+      "id": "beauty_current_overview",
+      "question": "Show the current-period overview for Beauty.",
+      "expected_tool_counts": {
+        "get_overview_metrics": 1
+      },
+      "forbidden_tools": [
+        "compare_periods",
+        "compare_dimension_periods"
+      ],
+      "required_terms": [
+        "Beauty"
+      ],
+      "tags": [
+        "single_period",
+        "overview"
+      ]
+    },
+    {
+      "id": "beauty_current_funnel",
+      "question": "Show the current-period funnel for Beauty.",
+      "expected_tool_counts": {
+        "get_funnel_metrics": 1
+      },
+      "forbidden_tools": [
+        "compare_periods",
+        "compare_dimension_periods"
+      ],
+      "required_terms": [
+        "CTR",
+        "CVR"
+      ],
+      "tags": [
+        "single_period",
+        "funnel"
+      ]
+    },
+    {
+      "id": "beauty_channel_breakdown",
+      "question": "Break down current-period Beauty performance by channel.",
+      "expected_tool_counts": {
+        "breakdown_by_dimension": 1
+      },
+      "forbidden_tools": [
+        "compare_periods",
+        "compare_dimension_periods"
+      ],
+      "required_terms": [
+        "Livestream",
+        "Search",
+        "Short Video"
+      ],
+      "tags": [
+        "single_period",
+        "breakdown"
+      ]
+    },
+    {
+      "id": "invalid_category",
+      "question": "Show the current-period overview for Books.",
+      "expected_tool_counts": {
+        "get_overview_metrics": 1
+      },
+      "forbidden_tools": [
+        "compare_periods",
+        "compare_dimension_periods"
+      ],
+      "required_terms": [],
+      "tags": [
+        "invalid_input",
+        "error_handling"
+      ]
+    },
+    {
+      "id": "empty_date_range",
+      "question": "Show the overview from 2030-01-01 to 2030-01-07.",
+      "expected_tool_counts": {
+        "get_overview_metrics": 1
+      },
+      "forbidden_tools": [
+        "compare_periods",
+        "compare_dimension_periods"
+      ],
+      "required_terms": [],
+      "tags": [
+        "no_data",
+        "error_handling"
+      ]
+    }
+  ]

@@ -1,5 +1,6 @@
 import json
 import os
+from time import perf_counter
 from typing import Any
 
 from dotenv import load_dotenv
@@ -28,32 +29,27 @@ DATE_FILTER_PROPERTIES = {
     },
     "category": {
         "type": "string",
-        "enum": [
-            "Beauty",
-            "Electronics",
-            "Home",
-            "Apparel",
-            "Food",
-        ],
-        "description": "Optional product category filter.",
+        "description": (
+            "Optional product category filter. Known values are Beauty, "
+            "Electronics, Home, Apparel, and Food. Pass the user's value "
+            "through unchanged so the Python tool can validate it."
+        ),
     },
     "channel": {
         "type": "string",
-        "enum": [
-            "Livestream",
-            "Short Video",
-            "Search",
-        ],
-        "description": "Optional traffic channel filter.",
+        "description": (
+            "Optional traffic channel filter. Known values are "
+            "Livestream, Short Video, and Search. Pass the user's value "
+            "through unchanged so the Python tool can validate it."
+        ),
     },
     "user_segment": {
         "type": "string",
-        "enum": [
-            "New",
-            "Returning",
-            "High Value",
-        ],
-        "description": "Optional user segment filter.",
+        "description": (
+            "Optional user segment filter. Known values are New, "
+            "Returning, and High Value. Pass the user's value through "
+            "unchanged so the Python tool can validate it."
+        ),
     },
 }
 
@@ -104,7 +100,10 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
             "name": "get_overview_metrics",
             "description": (
                 "Return aggregated business metrics for one date range "
-                "and optional category, channel, or user-segment filters."
+                "and optional category, channel, or user-segment filters. "
+                "For a single-period overview request, call this exactly "
+                "once and pass every user-provided filter value unchanged, "
+                "including values that may be invalid."
             ),
             "parameters": {
                 "type": "object",
@@ -146,7 +145,8 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
             "description": (
                 "Compare every value of one business dimension "
                 "between a current period and a previous period. "
-                "Use this instead of repeated filtered calls."
+                "Use this instead of repeated filtered calls. Do not use "
+                "this tool merely to validate a filter or list valid values."
             ),
             "parameters": {
                 "type": "object",
@@ -275,8 +275,19 @@ def execute_tool(
     return json.dumps(result)
 
 
-def run_agent(question: str) -> str:
+def run_agent(
+    question: str,
+    return_trace: bool = False,
+    verbose: bool = True,
+) -> str | dict[str, Any]:
     """Run the DeepSeek tool-calling loop."""
+
+    started_at = perf_counter()
+    tool_trace: list[dict[str, Any]] = []
+    prompt_tokens = 0
+    completion_tokens = 0
+    total_tokens = 0
+    force_final_answer = False
 
     client = create_client()
     model = os.getenv(
@@ -302,7 +313,9 @@ def run_agent(question: str) -> str:
             model=model,
             messages=messages,
             tools=TOOL_DEFINITIONS,
-            tool_choice="auto",
+            tool_choice=(
+                "none" if force_final_answer else "auto"
+            ),
             stream=False,
             max_tokens=2000,
             extra_body={
@@ -311,6 +324,11 @@ def run_agent(question: str) -> str:
                 }
             },
         )
+
+        if response.usage is not None:
+            prompt_tokens += response.usage.prompt_tokens or 0
+            completion_tokens += response.usage.completion_tokens or 0
+            total_tokens += response.usage.total_tokens or 0
 
         choice = response.choices[0]
         message = choice.message
@@ -327,16 +345,31 @@ def run_agent(question: str) -> str:
                     "The model returned an empty final response."
                 )
 
-            return message.content
+            if not return_trace:
+                return message.content
+
+            return {
+                "question": question,
+                "answer": message.content,
+                "tool_calls": tool_trace,
+                "tool_call_count": len(tool_trace),
+                "elapsed_seconds": round(
+                    perf_counter() - started_at,
+                    3,
+                ),
+                "prompt_tokens": prompt_tokens,
+                "completion_tokens": completion_tokens,
+                "total_tokens": total_tokens,
+            }
 
         for tool_call in message.tool_calls:
             tool_name = tool_call.function.name
+            raw_arguments = tool_call.function.arguments
 
             try:
-                arguments = json.loads(
-                    tool_call.function.arguments
-                )
+                arguments = json.loads(raw_arguments)
             except json.JSONDecodeError as error:
+                arguments = {}
                 tool_result = json.dumps(
                     {
                         "status": "error",
@@ -345,15 +378,35 @@ def run_agent(question: str) -> str:
                     }
                 )
             else:
-                print(f"Tool call: {tool_name}")
-                print(
-                    "Arguments: "
-                    + json.dumps(arguments, indent=2)
-                )
+                if verbose:
+                    print(f"Tool call: {tool_name}")
+                    print(
+                        "Arguments: "
+                        + json.dumps(arguments, indent=2)
+                    )
+
                 tool_result = execute_tool(
                     tool_name,
                     arguments,
                 )
+
+            parsed_result = json.loads(tool_result)
+            tool_status = (
+                parsed_result.get("status", "unknown")
+                if isinstance(parsed_result, dict)
+                else "unknown"
+            )
+
+            if tool_status in {"error", "no_data"}:
+                force_final_answer = True
+
+            tool_trace.append(
+                {
+                    "name": tool_name,
+                    "arguments": arguments,
+                    "status": tool_status,
+                }
+            )
 
             messages.append(
                 {
